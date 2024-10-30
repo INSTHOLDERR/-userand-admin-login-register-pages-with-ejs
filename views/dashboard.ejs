@@ -1,0 +1,175 @@
+<%- include('header', { title: 'Admin Dashboard' }) %>
+
+<div class="dashboard-container">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="dashboard-heading">Admin Dashboard</h1>
+        <button class="dashboard-logout-btn" onclick="logout()">Logout</button>
+        <button class="dashboard-create-btn" onclick="openCreateForm()">New User</button>
+    </div>
+
+    <% if (error) { %>
+        <div class="alert alert-danger">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <div class="dashboard-content">
+        <div class="dashboard-table-main">
+            <table id="myTable" class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% users?.forEach(function(user) { %>
+                    <tr>
+                        <td><%= user.name %></td>
+                        <td><%= user.email %></td>
+                        <td>
+                            <button class="dashboard-edit-btn" onclick="openEditModal('<%= user._id %>', '<%= user.name %>', '<%= user.email %>')">Edit</button>
+                            <button class="dashboard-delete-btn" onclick="confirmDelete('<%= user._id %>')">Delete</button>
+                        </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="dashboard-popus">
+            <!-- Create -->
+            <div id="createUserPopup" class="popup-form hidden">
+                <div class="form-box">
+                    <div class="form-header">
+                        <h3>Create User</h3>
+                        <button class="close-btn" onclick="closeCreateForm()">X</button>
+                    </div>
+                    <form method="POST" action="/adminregister" onsubmit="return validateCreateUserForm()">
+                        <div class="form-group">
+                            <label for="name">Name:</label>
+                            <input type="text" id="name" name="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password:</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit -->
+            <div id="editUserPopup" class="popup-form hidden">
+                <div class="form-box">
+                    <div class="form-header">
+                        <h3>Edit User</h3>
+                        <button class="close-btn" onclick="closeEditForm()">X</button>
+                    </div>
+                    <form id="editUserForm" method="POST">
+                        <input type="hidden" id="editUserId" name="userId">
+                        <div class="form-group">
+                            <label for="editUserName">Name:</label>
+                            <input type="text" id="editUserName" name="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editUserEmail">Email:</label>
+                            <input type="email" id="editUserEmail" name="email" class="form-control" required>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#myTable').DataTable();
+});
+
+function validateCreateUserForm() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (password !== confirmPassword) {
+        alert('Passwords do not match!');
+        return false;
+    }
+    return true;
+}
+
+function openCreateForm() {
+    document.getElementById('createUserPopup').classList.remove('hidden');
+    document.getElementById('editUserPopup').classList.add('hidden');
+    document.body.style.overflow = 'hidden'; 
+}
+
+function closeCreateForm() {
+    document.getElementById('createUserPopup').classList.add('hidden');
+    document.body.style.overflow = ''; 
+}
+
+function openEditModal(userId, name, email) {
+    document.getElementById('editUserPopup').classList.remove('hidden');
+    document.getElementById('createUserPopup').classList.add('hidden');
+    document.getElementById('editUserId').value = userId;
+    document.getElementById('editUserName').value = name;
+    document.getElementById('editUserEmail').value = email;
+    document.getElementById('editUserForm').action = `/admin/edit/${userId}`;
+    document.body.style.overflow = 'hidden'; 
+}
+
+function closeEditForm() {
+    document.getElementById('editUserPopup').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function confirmDelete(userId) {
+    if (confirm('You want to delete the user?')) {
+        fetch(`/admin/delete/${userId}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to delete');
+                }
+            })
+            .catch(error => {
+                console.error('Error in deleting', error);
+                alert('Error occurred in deleting');
+            });
+    }
+}
+
+function logout() {
+    fetch('/adminlogout', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = '/adminlogin';
+            } else {
+                alert('Failed to logout');
+            }
+        })
+        .catch(error => {
+            console.error('Error', error);
+            alert('Error occurred');
+        });
+}
+</script>
+
+<%- include('footer') %>
